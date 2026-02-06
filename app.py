@@ -19,7 +19,7 @@ st.set_page_config(
 )
 
 # ===============================
-# Load ML Model & Scaler
+# Load ML Model (NO SCALER)
 # ===============================
 xgb_model = joblib.load("best_xgboost_model.joblib")
 
@@ -29,7 +29,7 @@ xgb_model = joblib.load("best_xgboost_model.joblib")
 st.title("📈 Stock Closing Price Prediction")
 st.markdown(
     "This app predicts the **closing stock price** using a trained **XGBoost model** "
-    "and provides **AI-based explanations** using **Gemini API**."
+    "and provides **AI-based explanations**."
 )
 
 # ===============================
@@ -50,14 +50,12 @@ avg_price = (high_price + low_price) / 2
 # ===============================
 if st.button("📊 Predict Closing Price"):
 
-    # Prepare input
-    input_data = np.array([[open_price, high_price, low_price, price_range, avg_price]])
+    input_data = np.array([
+        [open_price, high_price, low_price, price_range, avg_price]
+    ])
 
-    # 🔥 SCALE INPUT (CRITICAL FIX)
-    input_data_scaled = scaler.transform(input_data)
-
-    # Predict
-    prediction = xgb_model.predict(input_data_scaled)[0]
+    # ✅ DIRECT PREDICTION (NO SCALER)
+    prediction = xgb_model.predict(input_data)[0]
 
     st.success(f"💰 Predicted Closing Price: ₹ {prediction:.2f}")
 
@@ -66,31 +64,24 @@ if st.button("📊 Predict Closing Price"):
     # ===============================
     st.subheader("🤖 AI Explanation")
 
-    prompt = f"""
-You are a financial data science assistant.
-
-The predicted stock closing price is ₹{prediction:.2f}.
-
-IMPORTANT CONTEXT:
-- Prediction comes from an XGBoost regression model
-- The model uses ONLY numerical price inputs
-- Inputs:
-  Open = {open_price}
-  High = {high_price}
-  Low  = {low_price}
-
-TASK:
-Explain the prediction in simple terms for a beginner investor.
-
-RULES:
-- Do NOT mention news, earnings, volume, institutions, Nifty, Sensex
-- Explain using price range behavior only
-- Clearly say this is a statistical estimate
-- Keep it short and professional
-"""
-
     try:
-        response = gemini_model.generate_content(prompt)
+        response = gemini_model.generate_content(
+            f"""
+Explain the predicted closing price of ₹{prediction:.2f}
+using only price-based reasoning.
+
+Inputs:
+Open = {open_price}
+High = {high_price}
+Low = {low_price}
+
+Rules:
+- No news, earnings, sentiment, volume
+- Explain using price range behavior only
+- Mention this is a statistical estimate
+- Keep it short and beginner-friendly
+"""
+        )
         st.info(response.text)
 
     except Exception:
@@ -98,12 +89,12 @@ RULES:
             f"""
 **Model-Based Explanation**
 
-The predicted closing price of ₹{prediction:.2f} is derived from how the stock
-moved between its daily high and low.
+The predicted closing price of ₹{prediction:.2f} is calculated using
+today’s price movement.
 
-• Wider price range indicates higher volatility  
-• The model compares this pattern with historical data  
-• The output is a **statistical estimate**, not financial advice  
+• The model evaluates how far price moved between high and low  
+• It compares this pattern with historical data  
+• The result is a statistical estimate, not financial advice  
 
 ⚠️ External factors like news or sentiment are not included.
 """
