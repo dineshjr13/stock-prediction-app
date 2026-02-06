@@ -22,7 +22,6 @@ st.set_page_config(
 # Load ML Model & Scaler
 # ===============================
 xgb_model = joblib.load("best_xgboost_model.joblib")
-scaler = joblib.load("scaler.joblib")   # 🔥 REQUIRED FIX
 
 # ===============================
 # App Title
